@@ -2,6 +2,7 @@ const express=require('express');
 
 const http=require('http');
 const bodyParser=require('body-parser');
+const mongoose=require('mongoose');
 const app=express();
 
 const morgan=require('morgan');
@@ -9,6 +10,9 @@ const dishRouter = require('./routes/dishRouter');
 const promoRouter = require('./routes/promoRouter');
 const leaderRouter = require('./routes/leaderRouter');
 const port=3000;
+const url="mongodb://localhost:27017/DishesDb";
+
+const Dishes=require('./models/dishes');
 
 const host='localhost';
 app.use(morgan('dev'));//used for getting logs on screen
@@ -17,6 +21,18 @@ app.use(express.static(__dirname+'/public'));//by default this will represent in
 app.use('/dishes', dishRouter);
 app.use('/promos',promoRouter);
 app.use('/leaders',leaderRouter);
+
+
+
+//DataBase Connection
+
+const connection=mongoose.connect(url,{useNewUrlParser: true, useUnifiedTopology: true});
+connection.then(function(db){
+    console.log('Successfully Connected to the database');
+})
+.catch(function(err){console.error(err);});
+
+//DataBase Connection
 
 app.use(function(req,res,next)
 {
