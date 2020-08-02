@@ -13,13 +13,15 @@ const port=3000;
 const url="mongodb://localhost:27017/DishesDb";
 
 const Dishes=require('./models/dishes');
+const Promotions=require('./models/promotions');
+const Leaders=require('./models/promotions');
 
 const host='localhost';
 app.use(morgan('dev'));//used for getting logs on screen
 app.use(bodyParser.json());//This will parse the body of the incoming request from the client and will add it to the req.body
 app.use(express.static(__dirname+'/public'));//by default this will represent index.html file in the given statci folder.
 app.use('/dishes', dishRouter);
-app.use('/promos',promoRouter);
+app.use('/promotions',promoRouter);
 app.use('/leaders',leaderRouter);
 
 
