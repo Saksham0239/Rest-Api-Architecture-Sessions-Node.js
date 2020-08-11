@@ -19,6 +19,36 @@ const Leaders=require('./models/promotions');
 const host='localhost';
 app.use(morgan('dev'));//used for getting logs on screen
 app.use(bodyParser.json());//This will parse the body of the incoming request from the client and will add it to the req.body
+
+//before providing static files we provide authentication
+
+function auth(req,res,next){
+    console.log("Request Object  ");
+    var authHeader = req.headers.authorization;
+   if(!authHeader){
+       var err=new Error('You are Not Authenticated');
+       res.setHeader('WWW-Authenticate', 'Basic');
+       err.status=401;
+       next(err);
+       return;
+   }
+
+ var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+  var user = auth[0];
+  var pass = auth[1];
+  if (user == 'admin' && pass == 'password') {
+      next(); // authorized
+  } else {
+      var err = new Error('You are not authenticated!');
+      res.setHeader('WWW-Authenticate', 'Basic');      
+      err.status = 401;
+      next(err);
+  }
+}
+
+
+
+app.use(auth);
 app.use(express.static(__dirname+'/public'));//by default this will represent index.html file in the given statci folder.
 app.use('/dishes', dishRouter);
 app.use('/promotions',promoRouter);
