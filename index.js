@@ -4,6 +4,7 @@ const http=require('http');
 const bodyParser=require('body-parser');
 const mongoose=require('mongoose');
 const app=express();
+const cookieParser=require('cookie-parser');
 
 const morgan=require('morgan');
 const dishRouter = require('./routes/dishRouter');
@@ -19,31 +20,47 @@ const Leaders=require('./models/promotions');
 const host='localhost';
 app.use(morgan('dev'));//used for getting logs on screen
 app.use(bodyParser.json());//This will parse the body of the incoming request from the client and will add it to the req.body
-
+app.use(cookieParser('1234-5678-9101112'));//secret string for accessing the cookie by server
 //before providing static files we provide authentication
 
 function auth(req,res,next){
-    console.log("Request Object  ");
-    var authHeader = req.headers.authorization;
-   if(!authHeader){
-       var err=new Error('You are Not Authenticated');
-       res.setHeader('WWW-Authenticate', 'Basic');
-       err.status=401;
-       next(err);
-       return;
-   }
+    if(!req.signedCookies.user){
+        console.log(req.signedCookies);
+        var authHeader = req.headers.authorization;
+        if(!authHeader){
+            var err=new Error('You are Not Authenticated');
+            res.setHeader('WWW-Authenticate', 'Basic');
+            err.status=401;
+            next(err);
+            return;
+        }
+      var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+       var user = auth[0];
+       var pass = auth[1];
+       if (user == 'admin' && pass == 'password') {
+           res.cookie('user','admin',{signed:true});//cookie sent to the client side and will be attached in every new request that the client sends to the server
+           next(); // authorized
+       } else {
+           var err = new Error('You are not authenticated!');
+           res.setHeader('WWW-Authenticate', 'Basic');      
+           err.status = 401;
+           next(err);
+       }
+    }
 
- var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-  var user = auth[0];
-  var pass = auth[1];
-  if (user == 'admin' && pass == 'password') {
-      next(); // authorized
-  } else {
-      var err = new Error('You are not authenticated!');
-      res.setHeader('WWW-Authenticate', 'Basic');      
-      err.status = 401;
-      next(err);
-  }
+    else
+    {
+        console.log(req.signedCookies);
+        if(req.signedCookies.user=='admin'){
+            next();//move on to the next middleware
+        }
+        else{
+            var err=new Error('Send the correct user name, Authentification Failed');
+            err.status=401;
+            next(err);
+        }
+    }
+   
 }
 
 
