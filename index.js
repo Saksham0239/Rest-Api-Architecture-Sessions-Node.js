@@ -5,6 +5,8 @@ const bodyParser=require('body-parser');
 const mongoose=require('mongoose');
 const app=express();
 const cookieParser=require('cookie-parser');
+const session=require('express-session');
+const fileStore=require('session-file-store')(session);
 
 const morgan=require('morgan');
 const dishRouter = require('./routes/dishRouter');
@@ -20,12 +22,20 @@ const Leaders=require('./models/promotions');
 const host='localhost';
 app.use(morgan('dev'));//used for getting logs on screen
 app.use(bodyParser.json());//This will parse the body of the incoming request from the client and will add it to the req.body
-app.use(cookieParser('1234-5678-9101112'));//secret string for accessing the cookie by server
+// app.use(cookieParser('1234-5678-9101112'));//secret string for accessing the cookie by server
 //before providing static files we provide authentication
 
+app.use(session({
+    name: 'session-Id',
+    secret: '1234-5678-9101112',
+    saveUninitialized: false,
+    resave: false,
+    store: new fileStore()
+}));
+
 function auth(req,res,next){
-    if(!req.signedCookies.user){
-        console.log(req.signedCookies);
+    if(!req.session.user){
+        console.log(req.session);
         var authHeader = req.headers.authorization;
         if(!authHeader){
             var err=new Error('You are Not Authenticated');
@@ -38,7 +48,7 @@ function auth(req,res,next){
        var user = auth[0];
        var pass = auth[1];
        if (user == 'admin' && pass == 'password') {
-           res.cookie('user','admin',{signed:true});//cookie sent to the client side and will be attached in every new request that the client sends to the server
+           req.session.user='admin';
            next(); // authorized
        } else {
            var err = new Error('You are not authenticated!');
@@ -50,8 +60,8 @@ function auth(req,res,next){
 
     else
     {
-        console.log(req.signedCookies);
-        if(req.signedCookies.user=='admin'){
+        console.log(req.session);
+        if(req.session.user=='admin'){
             next();//move on to the next middleware
         }
         else{
