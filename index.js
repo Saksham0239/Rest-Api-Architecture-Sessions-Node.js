@@ -12,6 +12,7 @@ const morgan=require('morgan');
 const dishRouter = require('./routes/dishRouter');
 const promoRouter = require('./routes/promoRouter');
 const leaderRouter = require('./routes/leaderRouter');
+const usersRouter=require('./routes/users');
 const port=3000;
 const url="mongodb://localhost:27017/DishesDb";
 
@@ -33,44 +34,27 @@ app.use(session({
     store: new fileStore()
 }));
 
-function auth(req,res,next){
-    if(!req.session.user){
-        console.log(req.session);
-        var authHeader = req.headers.authorization;
-        if(!authHeader){
-            var err=new Error('You are Not Authenticated');
-            res.setHeader('WWW-Authenticate', 'Basic');
-            err.status=401;
-            next(err);
-            return;
-        }
-      var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-       var user = auth[0];
-       var pass = auth[1];
-       if (user == 'admin' && pass == 'password') {
-           req.session.user='admin';
-           next(); // authorized
-       } else {
-           var err = new Error('You are not authenticated!');
-           res.setHeader('WWW-Authenticate', 'Basic');      
-           err.status = 401;
-           next(err);
-       }
-    }
+// app.use('/', indexRouter);
+app.use('/users', usersRouter);
 
-    else
-    {
-        console.log(req.session);
-        if(req.session.user=='admin'){
-            next();//move on to the next middleware
-        }
-        else{
-            var err=new Error('Send the correct user name, Authentification Failed');
-            err.status=401;
-            next(err);
-        }
+function auth (req, res, next) {
+    console.log(req.session);
+
+  if(!req.session.user) {
+      var err = new Error('You are not authenticated!');
+      err.status = 403;
+      return next(err);
+  }
+  else {
+    if (req.session.user === 'authenticated') {
+      next();
     }
-   
+    else {
+      var err = new Error('You are not authenticated!');
+      err.status = 403;
+      return next(err);
+    }
+  }
 }
 
 
