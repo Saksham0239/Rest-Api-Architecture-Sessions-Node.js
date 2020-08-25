@@ -7,12 +7,14 @@ const app=express();
 const cookieParser=require('cookie-parser');
 const session=require('express-session');
 const fileStore=require('session-file-store')(session);
-
+const passport=require('passport');
+const authenticate=require('./authenticate');
 const morgan=require('morgan');
 const dishRouter = require('./routes/dishRouter');
 const promoRouter = require('./routes/promoRouter');
 const leaderRouter = require('./routes/leaderRouter');
 const usersRouter=require('./routes/users');
+
 const port=3000;
 const url="mongodb://localhost:27017/DishesDb";
 
@@ -33,31 +35,24 @@ app.use(session({
     resave: false,
     store: new fileStore()
 }));
-
+app.use(passport.initialize());
+app.use(passport.session());
 // app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 function auth (req, res, next) {
-    console.log(req.session);
 
-  if(!req.session.user) {
+    console.log(req.user);//this is added when passport is used
+
+    if (!req.user) {
       var err = new Error('You are not authenticated!');
       err.status = 403;
-      return next(err);
-  }
-  else {
-    if (req.session.user === 'authenticated') {
-      next();
+      next(err);
     }
     else {
-      var err = new Error('You are not authenticated!');
-      err.status = 403;
-      return next(err);
+          next();
     }
-  }
 }
-
-
 
 app.use(auth);
 app.use(express.static(__dirname+'/public'));//by default this will represent index.html file in the given statci folder.
